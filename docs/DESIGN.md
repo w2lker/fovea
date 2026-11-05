@@ -223,7 +223,7 @@ is an implicit signal that the selection was not enough.
 - `fovea note <id> "<what went wrong>"` appends to `FOVEA_HOME/notes.jsonl`: ts, id, note, cwd, plus
   session_id / command / task copied from the matching log line when the id is found. Unknown ids are
   still saved (with `matched: false`) and the command says so. Prints one short confirmation line.
-  Never fails loudly: bad arguments print usage and exit 0... except a missing note text exits 2.
+  Bad or missing arguments print usage and exit 2.
 
 ### SessionStart hook — the agent learns about notes once per session
 `fovea/session_start.py` prints
