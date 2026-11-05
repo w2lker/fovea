@@ -140,6 +140,10 @@ Bash carries ~78% of tool-output volume. Not installed into Claude Code until Ro
 ### Pass through unchanged (log the reason) when
 - `tool_name` is not `Bash`; mode `off`; no API key in the environment.
 - `stdout` shorter than `FOVEA_MIN_CHARS`; `interrupted` or `isImage` true.
+- `stdout` at Claude Code's Bash limit (`BASH_MAX_OUTPUT_LENGTH`, default 30000 chars) → reason
+  `harness_persisted`. Found live on 5 Nov: Claude Code cuts the output to the limit *before* the hook
+  sees it, saves the full raw output to its own file, and shows the model only a 2 KB preview of the
+  hook's replacement — so a selection would be both incomplete and cut off.
 - `stderr` non-empty after removing lines starting with `Shell cwd was reset to ` (a harness note).
 - Error output, checked in the **last 30 lines only** and by message shape, not the bare word:
   `Traceback (most recent call last)`, `^\s*(error|Error|ERROR)([…])?: ` (e.g. `error[E0425]: `), `^\s*ERROR\b`,

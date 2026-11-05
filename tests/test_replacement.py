@@ -226,7 +226,8 @@ class RenderingTests(HookCase):
     def test_large_output_goes_as_parallel_requests_and_still_covers(self):
         out = make_output(n=900, needles=(450,))
         self.assertGreater(len(out), 200000)
-        p, view, header, segs = self._run(stdout=out)
+        # Only reachable when the user raises Claude Code's Bash output limit.
+        p, view, header, segs = self._run(stdout=out, BASH_MAX_OUTPUT_LENGTH="1000000")
         for r in self.stub.requests:
             self.assertLessEqual(len(r["body"]["state"]), 100000 + 200)
         self.assertGreaterEqual(len(self.stub.requests), 2)

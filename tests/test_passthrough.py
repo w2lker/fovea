@@ -293,3 +293,19 @@ class JudgePassTests(PassBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HarnessLimitTests(HookCase):
+    """Claude Code cuts Bash output at BASH_MAX_OUTPUT_LENGTH (default 30000) and saves it itself."""
+
+    def test_output_at_the_harness_limit_passes_through(self):
+        out = make_output(n=200)
+        self.assertGreater(len(out), 30000)
+        r = self.run_hook(self.payload(stdout=out[:30000]))
+        self.assertEqual(r.stdout, "")
+        self.assertEqual(self.read_log()[-1]["reason"], "harness_persisted")
+
+    def test_raised_limit_allows_filtering(self):
+        out = make_output(n=200)[:30000]
+        r = self.run_hook(self.payload(stdout=out), BASH_MAX_OUTPUT_LENGTH="150000")
+        self.assertTrue(r.stdout.strip())
