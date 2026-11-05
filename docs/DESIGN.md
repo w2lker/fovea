@@ -63,13 +63,27 @@ command first, and by the content second.
 - **Active:** replace the output.
 - With no key, Jev unavailable, or a timeout, the output passes through unchanged.
 
-## Model
+## Model and configuration
 
-TypeSafe Jev via OpenRouter (`openrouter/~typesafe/jev-latest`, endpoint `api/alpha/decisions`). The
-endpoint is alpha and may change. Jev returns one probability per question and generates no text. In
-validation it took ~0.45 s and cost ~$0.0006 per output. The scale is monotonic, but the middle runs
-high (p 0.7–0.9 means only about half of those blocks are needed). That makes it fine as a filter, but
-the numbers cannot be read literally as probabilities.
+Default judge: TypeSafe Jev via OpenRouter (`~typesafe/jev-latest`, endpoint `api/alpha/decisions`; alpha,
+may change). Jev returns one probability per question and generates no text. In validation it took
+~0.45 s and ~$0.0006 per output. The scale is monotonic, but the middle runs high (p 0.7–0.9 → about
+half the blocks are needed): fine as a filter, not literally a probability.
+
+Everything is configurable through environment variables:
+
+| Variable | Default |
+|---|---|
+| `FOVEA_BASE_URL` | `https://openrouter.ai/api/alpha/decisions` |
+| `FOVEA_API_KEY_ENV` | `OPENROUTER_API_KEY` (name of the variable holding the key) |
+| `FOVEA_MODEL` | `~typesafe/jev-latest` |
+| `FOVEA_THRESHOLD` | `0.2` |
+| `FOVEA_TIMEOUT` | a few seconds; on timeout the output passes through |
+
+**Support policy:** the defaults are calibrated and validated; we stand behind Jev at 0.2. Any other
+endpoint or model is the user's choice and responsibility, including the threshold. The endpoint must
+speak the decisions format (`state` + `questions` in, one probability per question out); chat models
+need a separate adapter, which v1 does not ship.
 
 ## Validation (5 Nov 2026, summary)
 
