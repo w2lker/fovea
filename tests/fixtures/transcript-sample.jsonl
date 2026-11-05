@@ -1,0 +1,5 @@
+{"type":"user","sessionId":"fixture-session","message":{"role":"user","content":"Find out why the report script prints so much output and fix the NEEDLE-TOKEN handling."},"uuid":"u1","timestamp":"2026-11-05T15:00:00.000Z"}
+{"type":"assistant","sessionId":"fixture-session","message":{"role":"assistant","content":[{"type":"text","text":"I will run the report script and look at the output for the NEEDLE-TOKEN lines."},{"type":"tool_use","id":"toolu_01ErvVJZj85ApncuPcp9SZdk","name":"Bash","input":{"command":"python3 report.py"}}]},"uuid":"a1","timestamp":"2026-11-05T15:00:02.000Z"}
+{"type":"user","sessionId":"fixture-session","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01prev","content":"ok"}]},"uuid":"u2","timestamp":"2026-11-05T15:00:03.000Z"}
+{"type":"user","sessionId":"fixture-session","message":{"role":"user","content":"<system-reminder>\nThe task tools haven't been used recently. SYSREMINDER-ONLY-TEXT\n</system-reminder>"},"uuid":"u3","timestamp":"2026-11-05T15:00:04.000Z"}
+{"type":"system","subtype":"informational","content":"hook ran","uuid":"s1","timestamp":"2026-11-05T15:00:04.500Z"}
