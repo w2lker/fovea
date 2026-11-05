@@ -184,7 +184,7 @@ between [A001] and [/A001]) contain information the agent needs for this task?"}
 
 ### What the agent sees (exact format)
 ```
-[fovea: 3/60 blocks, 6% · full: cat ~/.fovea/out/7f3a2c1e.txt · kept 30d]
+[fovea 7f3a2c1e: 3/60 blocks, 6% · full: cat ~/.fovea/out/7f3a2c1e.txt · kept 30d]
 [skip 1-412: chore(deps) bump…; fix(grep) -t…; docs…; +20]
 [413-470]
 <lines 413–470 of the full file, verbatim>
@@ -193,7 +193,7 @@ between [A001] and [/A001]) contain information the agent needs for this task?"}
 - Line numbers refer to the saved full file. Adjacent kept blocks merge into one range.
 - Skip hints: first non-empty line of up to 3 blocks in the run, skipping git-log metadata lines
   (`commit <hash>`, `Author:`, `Date:`, `Merge:`), each ≤ 24 chars + `…`; `+N` for the rest.
-- Header percentage = kept chars / total chars. Path written with `~`.
+- Header carries the output id (the saved file's name). Percentage = kept chars / total chars. Path written with `~`.
 - Kept ranges and skip ranges together cover every line exactly once, in original order.
 
 ### Storage
@@ -208,5 +208,41 @@ between [A001] and [/A001]) contain information the agent needs for this task?"}
 - Log: `FOVEA_HOME/log/YYYY-MM-DD.jsonl`, one line per call that reached eligibility checks: ts,
   session_id, tool_use_id, cwd, command[:200], task[:300], mode, action (`replaced` | `shadow` |
   `sampled_shadow` | `passthrough`), reason, splitter, n_blocks, block_lines {label: [a, b]},
-  scores {label: p}, kept [labels], chars_total, chars_kept, latency_ms, cost, out_path, error.
-  Never the output text.
+  scores {label: p}, kept [labels], chars_total, chars_kept, latency_ms, cost, out_path, out_id,
+  transcript_path, recovered_id, error. Never the output text.
+
+## v1.1: feedback and report (agreed 5 Nov 2026)
+
+### Recovery reads are logged
+When a command reads a saved output (`…/out/<id>.txt`, any form of the Fovea home path), the hook still
+passes it through, and the log line gets `reason: recovery_read` and `recovered_id: <id>`. A recovery
+is an implicit signal that the selection was not enough.
+
+### `fovea note` — the agent reports a bad filter
+- CLI entry `fovea/cli.py`, shim `bin/fovea` (symlink it into `~/.local/bin`).
+- `fovea note <id> "<what went wrong>"` appends to `FOVEA_HOME/notes.jsonl`: ts, id, note, cwd, plus
+  session_id / command / task copied from the matching log line when the id is found. Unknown ids are
+  still saved (with `matched: false`) and the command says so. Prints one short confirmation line.
+  Never fails loudly: bad arguments print usage and exit 0... except a missing note text exits 2.
+
+### SessionStart hook — the agent learns about notes once per session
+`fovea/session_start.py` prints
+`{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": <text>}}` unless
+`FOVEA_MODE=off`. The text (≈40 tokens): *Bash outputs marked `[fovea <id>: …]` are filtered to the
+blocks relevant to your task; `[skip a-b]` lines are omitted ranges of the full file shown in the
+header. If the filtering hid something you needed or misled you, run `fovea note <id> "<what went
+wrong>"` — only when it really went wrong.*
+
+### `fovea report [--days N]` (default 7)
+Plain-text summary to stdout, from logs, notes and transcripts — nothing leaves the machine:
+- Calls seen; eligible; replaced; passthrough by reason; judge errors; latency p50/p95; total cost.
+- Savings on replaced outputs: sum chars_total, sum chars_kept, share saved, ≈ tokens saved (chars/3.5).
+- **Losses (sampled_shadow and shadow records):** take the Bash output from the transcript
+  (`tool_result` for that `tool_use_id`), cut it into the logged `block_lines`, and look at the next
+  20 assistant records of that session (text and tool inputs). A block counts as *used* if one of its
+  lines of ≥ 25 non-space characters appears there verbatim. Report used blocks that scored below the
+  threshold (would have been dropped) — count, share of measured outputs, and a list (id, command,
+  label, score). Records whose transcript or tool_result is missing are counted as unmeasured.
+- Recoveries: count, share of replaced outputs, list of ids with their commands.
+- Notes: every note with the matched command, task, kept/total blocks, and the dropped labels with
+  scores.
