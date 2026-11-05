@@ -287,7 +287,7 @@ class HookCase(unittest.TestCase):
 
 # ---------------------------------------------------------------- view parsing
 
-HEADER_RE = re.compile(r"^\[fovea: (\d+)/(\d+) blocks, (\d+)% · full: cat (.+?) · kept (\d+)d\]$")
+HEADER_RE = re.compile(r"^\[fovea [0-9a-f]{8}: (\d+)/(\d+) blocks, (\d+)% · full: cat (.+?) · kept (\d+)d\]$")
 RANGE_RE = re.compile(r"^\[(\d+)(?:-(\d+))?\]$")
 SKIP_RE = re.compile(r"^\[skip (\d+)(?:-(\d+))?: (.*)\]$")
 

@@ -35,6 +35,12 @@ def out_name(tool_use_id: str, text: str) -> str:
     return hashlib.sha1(seed.encode("utf-8", "surrogatepass")).hexdigest()[:8] + ".txt"
 
 
+def out_id(path: str) -> str:
+    """The id shown in the header: the saved file's name without `.txt`."""
+    name = os.path.basename(path)
+    return name[:-4] if name.endswith(".txt") else name
+
+
 def save_output(home: str, tool_use_id: str, text: str) -> str:
     _ensure_dir(home)
     out_dir = os.path.join(home, "out")
@@ -103,8 +109,15 @@ def cleanup(home: str, retention_days: float, max_store_mb: float, now: Optional
 LOG_FIELDS = (
     "ts", "session_id", "tool_use_id", "cwd", "command", "task", "mode", "action", "reason",
     "splitter", "n_blocks", "block_lines", "scores", "kept", "chars_total", "chars_kept",
-    "latency_ms", "cost", "out_path", "error",
+    "latency_ms", "cost", "out_path", "out_id", "transcript_path", "recovered_id", "error",
 )
+
+
+def append_private(home: str, path: str, data: bytes) -> None:
+    """Append to a private file under the Fovea home, creating the home if needed."""
+    _ensure_dir(home)
+    _ensure_dir(os.path.dirname(path))
+    _write_private(path, data, append=True)
 
 
 def write_log(home: str, record: dict) -> None:

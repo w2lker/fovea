@@ -26,6 +26,7 @@ KEPT_SHARE_LIMIT = 0.8
 def _base_record(payload: dict, cfg) -> dict:
     tool_input = payload.get("tool_input")
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
+    transcript = payload.get("transcript_path")
     return {
         "session_id": payload.get("session_id"),
         "tool_use_id": payload.get("tool_use_id"),
@@ -33,6 +34,7 @@ def _base_record(payload: dict, cfg) -> dict:
         "command": command[:200] if isinstance(command, str) else None,
         "mode": cfg.mode,
         "action": "passthrough",
+        "transcript_path": transcript if isinstance(transcript, str) else None,
     }
 
 
@@ -41,6 +43,8 @@ def process(payload: dict, cfg, record: dict):
     reason = guards.check(payload, cfg)
     if reason:
         record["reason"] = reason
+        if reason == "recovery_read":
+            record["recovered_id"] = guards.recovered_id(payload["tool_input"]["command"], cfg)
         return None
 
     from fovea import judge, render, split, task
@@ -98,7 +102,8 @@ def process(payload: dict, cfg, record: dict):
 
     path = store.save_output(cfg.home, str(payload.get("tool_use_id") or ""), sp.text)
     record["out_path"] = path
-    stdout = render.render(sp, labels, set(kept), chars_total, chars_kept,
+    record["out_id"] = store.out_id(path)
+    stdout = render.render(sp, labels, set(kept), chars_total, chars_kept, record["out_id"],
                            store.display_path(path), path, cfg.retention_days)
     replacement = dict(response)
     replacement["stdout"] = stdout

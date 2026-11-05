@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""Shim for the Fovea command line; works when symlinked elsewhere (e.g. into ~/.local/bin)."""
+
+import os
+import sys
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, _ROOT)
+
+from fovea.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    sys.exit(main())

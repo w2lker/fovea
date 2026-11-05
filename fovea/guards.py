@@ -66,6 +66,18 @@ def is_recovery_read(command: str, cfg: Config) -> bool:
     return False
 
 
+# A saved output's file name: 8 hex digits of sha1(tool_use_id) + ".txt" (see store.out_name).
+SAVED_OUTPUT_ID = re.compile(r"(?<![0-9A-Za-z])([0-9a-f]{8})\.txt\b")
+
+
+def recovered_id(command: str, cfg: Config) -> Optional[str]:
+    """The id of the saved output a recovery read refers to (the first one), or None."""
+    if not is_recovery_read(command, cfg):
+        return None
+    m = SAVED_OUTPUT_ID.search(command)
+    return m.group(1) if m else None
+
+
 def _bare_env(command: str) -> bool:
     for seg in shell.segments(command):
         for stage in shell.pipeline_stages(seg):
@@ -106,13 +118,17 @@ def check(payload: dict, cfg: Config) -> Optional[str]:
         return "mode_off"
     if not cfg.api_key:
         return "no_api_key"
-    response = payload.get("tool_response")
-    if not isinstance(response, dict) or not isinstance(response.get("stdout"), str):
-        return "unexpected_shape"
     tool_input = payload.get("tool_input")
     command = tool_input.get("command") if isinstance(tool_input, dict) else None
     if not isinstance(command, str):
         command = ""
+    # Checked before the size: a recovery is usually a short range of a saved output,
+    # and it must be logged as a recovery to count as a signal that the selection fell short.
+    if is_recovery_read(command, cfg):
+        return "recovery_read"
+    response = payload.get("tool_response")
+    if not isinstance(response, dict) or not isinstance(response.get("stdout"), str):
+        return "unexpected_shape"
     stdout = response["stdout"]
     if len(stdout) < cfg.min_chars:
         return "small_output"
@@ -127,8 +143,6 @@ def check(payload: dict, cfg: Config) -> Optional[str]:
         return "stderr"
     if has_error_output(stdout):
         return "error_output"
-    if is_recovery_read(command, cfg):
-        return "recovery_read"
     if "FOVEA_BYPASS=1" in command:
         return "bypass"
     if is_secret_command(command):
