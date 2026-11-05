@@ -309,3 +309,12 @@ class HarnessLimitTests(HookCase):
         out = make_output(n=200)[:30000]
         r = self.run_hook(self.payload(stdout=out), BASH_MAX_OUTPUT_LENGTH="150000")
         self.assertTrue(r.stdout.strip())
+
+    def test_limit_is_counted_in_utf8_bytes(self):
+        # Observed live: the cut lands at exactly 30000 UTF-8 bytes, fewer characters.
+        line = "commit subject \u2014 with an em dash and enough text to be a real line\n"
+        out = (line * 1000).encode("utf-8")[:30000].decode("utf-8", "ignore")
+        self.assertLess(len(out), 30000)
+        r = self.run_hook(self.payload(stdout=out))
+        self.assertEqual(r.stdout, "")
+        self.assertEqual(self.read_log()[-1]["reason"], "harness_persisted")

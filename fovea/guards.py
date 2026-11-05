@@ -132,7 +132,7 @@ def check(payload: dict, cfg: Config) -> Optional[str]:
     stdout = response["stdout"]
     if len(stdout) < cfg.min_chars:
         return "small_output"
-    if len(stdout) >= cfg.harness_limit:
+    if len(stdout.encode("utf-8", "replace")) >= cfg.harness_limit:  # the cut is in UTF-8 bytes
         # Claude Code already cut this output and saved the full text itself; it shows the model
         # only a 2 KB preview of whatever we return, so a selection would be cut off.
         return "harness_persisted"
