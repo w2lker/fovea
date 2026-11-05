@@ -175,7 +175,7 @@ Content checks come first and win over the command: lines `^diff --git ` → dif
 ### Judge request
 `POST FOVEA_BASE_URL`, `Authorization: Bearer <key>`, body `{"model", "state", "questions"}`.
 `state` = `"Tool output split into labeled blocks.\n\n"` + blocks as `[A001]\n<text>\n[/A001]`, joined by
-blank lines (labels `A%03d`, `A%04d` past 999). One question per block:
+blank lines (labels `A%03d`, `A%04d` past 999). `questions` is an object keyed by label, one per block:
 `{"type": "noul", "instructions": "The coding agent's current task: <task>\nDoes block A001 (the text
 between [A001] and [/A001]) contain information the agent needs for this task?"}`. Answer:
 `answers[label]["noul"]` (float). Keep blocks with p ≥ `FOVEA_THRESHOLD`.

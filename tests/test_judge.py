@@ -29,7 +29,7 @@ class JudgeRequestTests(HookCase):
 
     def tasks(self, req):
         out = []
-        for q in req["body"]["questions"]:
+        for q in req["body"]["questions"].values():
             m = Q_RE.match(q["instructions"])
             self.assertIsNotNone(m, q["instructions"][:300])
             out.append(m.group(1))
@@ -60,8 +60,10 @@ class JudgeRequestTests(HookCase):
         p, req = self.go()
         blocks = parse_state(req["body"]["state"])
         qs = req["body"]["questions"]
-        self.assertEqual(len(qs), len(blocks))
-        for (label, _), q in zip(blocks, qs):
+        self.assertIsInstance(qs, dict)
+        self.assertEqual(set(qs), {label for label, _ in blocks})
+        for label, _ in blocks:
+            q = qs[label]
             self.assertEqual(q["type"], "noul")
             m = Q_RE.match(q["instructions"])
             self.assertIsNotNone(m)
@@ -141,8 +143,8 @@ class JudgeRequestTests(HookCase):
         self.assertNotIn("OLD-ASSISTANT", task)
 
     def test_truncation_limits(self):
-        recs = [user_rec("U" * 590 + "USERTAIL" + "u" * 400), asst_rec("A" * 590 + "ASSTTAIL" + "a" * 400)]
-        cmd = "echo " + "c" * 290 + "CMDTAIL" + "d" * 100
+        recs = [user_rec("U" * 600 + "USERTAIL" + "u" * 400), asst_rec("A" * 600 + "ASSTTAIL" + "a" * 400)]
+        cmd = "echo " + "c" * 300 + "CMDTAIL" + "d" * 100
         p, req = self.go(command=cmd, transcript_path=self.write_transcript(recs))
         task = self.tasks(req)[0]
         self.assertIn("U" * 500, task)

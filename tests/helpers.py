@@ -167,8 +167,10 @@ class StubJudge(ThreadingHTTPServer):
     def make_answers(self, body):
         texts = dict(parse_state(body["state"]))
         answers = {}
-        for q in body["questions"]:
-            label = re.search(r"block (A\d{3,4}) ", q["instructions"]).group(1)
+        # The decisions API takes `questions` as an object keyed by label and
+        # answers under the same keys.
+        for label, q in body["questions"].items():
+            assert re.search(r"block (A\d{3,4}) ", q["instructions"]).group(1) == label
             answers[label] = {"noul": self.score(label, texts.get(label, ""))}
         return {"answers": answers}
 
