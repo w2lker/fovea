@@ -134,7 +134,6 @@ ERROR_LINES = {
     "error_colon_indented": "   error: cannot find module",
     "error_capital_colon": "Error: ENOENT no such file",
     "error_upper_bracket": "ERROR[build] step failed",
-    "error_space": "Error something went wrong",
     "failed": "tests/test_x.py::test_a FAILED",
     "panicked": "thread 'main' panicked at src/main.rs:10:5",
     "fatal": "fatal: not a git repository",
@@ -142,6 +141,25 @@ ERROR_LINES = {
 }
 for _n, _l in ERROR_LINES.items():
     setattr(SimplePassTests, "test_error_pattern_" + _n, _make_error_test(_l))
+
+
+class ErrorFalsePositiveTests(HookCase):
+    """Error detection looks at the last 30 lines and at message shape only."""
+
+    def _filtered(self, stdout):
+        self.stub.score = lambda label, text: 0.9 if NEEDLE in text else 0.01
+        r = self.run_hook(self.payload(stdout=stdout))
+        self.assertTrue(r.stdout.strip(), "expected the output to be filtered, got pass-through")
+
+    def test_bare_word_in_commit_body_does_not_block(self):
+        body = make_output()
+        lines = body.splitlines()
+        lines.insert(len(lines) // 2, "      error or unload ends alert at once")
+        lines.append("Error something went wrong")
+        self._filtered("\n".join(lines) + "\n")
+
+    def test_error_far_from_the_end_does_not_block(self):
+        self._filtered("error: early warning-like line\n" + make_output())
 
 
 def _make_secret_cmd_test(cmd):

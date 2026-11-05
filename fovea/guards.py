@@ -11,15 +11,25 @@ from fovea.config import Config
 
 HARNESS_STDERR_PREFIX = "Shell cwd was reset to "
 
+# A failing command reports at the end of its output, so only the tail is checked,
+# and only for the shape of an error message, not the bare word.
+ERROR_TAIL_LINES = 30
 ERROR_PATTERNS = re.compile(
     r"Traceback \(most recent call last\)"
-    r"|^\s*(?:error|Error|ERROR)[:\[ ]"
-    r"|FAILED"
+    r"|^\s*(?:error|Error|ERROR)(?:\[[^\]\n]*\])?: "
+    r"|^\s*ERROR\b"
+    r"|^FAILED\b|\bFAILED$|^FAIL\b"
     r"|panicked at"
-    r"|^fatal:"
-    r"|Exception:",
+    r"|^fatal: "
+    r"|^\S*(?:Exception|Error): ",
     re.MULTILINE,
 )
+
+
+def has_error_output(stdout: str) -> bool:
+    tail = "\n".join(stdout.splitlines()[-ERROR_TAIL_LINES:])
+    return bool(ERROR_PATTERNS.search(tail))
+
 
 SECRET_OUTPUT = re.compile(
     r"sk-[A-Za-z0-9_-]{20,}"
@@ -115,7 +125,7 @@ def check(payload: dict, cfg: Config) -> Optional[str]:
         return "unexpected_shape"
     if stderr and not stderr_is_empty(stderr):
         return "stderr"
-    if ERROR_PATTERNS.search(stdout):
+    if has_error_output(stdout):
         return "error_output"
     if is_recovery_read(command, cfg):
         return "recovery_read"

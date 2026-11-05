@@ -115,3 +115,18 @@ class SplitTests(HookCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GitLogHintTests(HookCase):
+    def test_skip_hints_show_commit_subjects_not_hashes(self):
+        from helpers import git_log_output, parse_view
+        out = git_log_output()
+        self.stub.score = lambda label, text: 0.9 if NEEDLE in text else 0.01
+        r = self.run_hook(self.payload(stdout=out, command="git log --stat -n 60"))
+        view = r.json()["hookSpecificOutput"]["updatedToolOutput"]["stdout"]
+        skips = [l for l in view.splitlines() if l.startswith("[skip ")]
+        self.assertTrue(skips)
+        for l in skips:
+            self.assertNotRegex(l, r"commit [0-9a-f]{7,}")
+            self.assertNotIn("Author:", l)
+            self.assertNotIn("Date:", l)

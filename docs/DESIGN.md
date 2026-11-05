@@ -141,8 +141,10 @@ Bash carries ~78% of tool-output volume. Not installed into Claude Code until Ro
 - `tool_name` is not `Bash`; mode `off`; no API key in the environment.
 - `stdout` shorter than `FOVEA_MIN_CHARS`; `interrupted` or `isImage` true.
 - `stderr` non-empty after removing lines starting with `Shell cwd was reset to ` (a harness note).
-- Error output: a line matching `Traceback (most recent call last)`, `^\s*(error|Error|ERROR)[:\[ ]`,
-  `FAILED`, `panicked at`, `^fatal:`, `Exception:`.
+- Error output, checked in the **last 30 lines only** and by message shape, not the bare word:
+  `Traceback (most recent call last)`, `^\s*(error|Error|ERROR)([…])?: ` (e.g. `error[E0425]: `), `^\s*ERROR\b`,
+  `^FAILED`/`FAILED$`/`^FAIL`, `panicked at`, `^fatal: `, `^<Name>Exception: `/`^<Name>Error: `.
+  (A first version matched the word anywhere and skipped a `git log` whose commit body said "error or…".)
 - Recovery reads: the command references `FOVEA_HOME` (or `~/.fovea`).
 - Bypass: the command contains `FOVEA_BYPASS=1`.
 - Secrets by command: command words `op`, `security`, `printenv`, `env` (bare), `gh auth token`; paths
@@ -189,7 +191,8 @@ between [A001] and [/A001]) contain information the agent needs for this task?"}
 [skip 471-1288: feat(init)…; ci…]
 ```
 - Line numbers refer to the saved full file. Adjacent kept blocks merge into one range.
-- Skip hints: first non-empty line of up to 3 blocks in the run, each ≤ 24 chars + `…`; `+N` for the rest.
+- Skip hints: first non-empty line of up to 3 blocks in the run, skipping git-log metadata lines
+  (`commit <hash>`, `Author:`, `Date:`, `Merge:`), each ≤ 24 chars + `…`; `+N` for the rest.
 - Header percentage = kept chars / total chars. Path written with `~`.
 - Kept ranges and skip ranges together cover every line exactly once, in original order.
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import shlex
 from typing import List, Set
 
@@ -15,10 +16,14 @@ def _days(value: float) -> str:
     return str(int(value)) if float(value).is_integer() else ("%g" % value)
 
 
+# Header lines that say nothing about a block's content (git log metadata).
+_NOT_A_HINT = re.compile(r"^(commit [0-9a-f]{7,}|Author: |Date: |Merge: )")
+
+
 def _hint(sp: Split, block: Block) -> str:
     for line in sp.lines[block.start:block.end]:
         text = line.strip()
-        if text:
+        if text and not _NOT_A_HINT.match(text):
             return text if len(text) <= HINT_CHARS else text[:HINT_CHARS] + "…"
     return ""
 
