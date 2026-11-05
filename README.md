@@ -1,24 +1,24 @@
 # Fovea
 
-Sharp focus on what matters in your coding agent's tool output; the rest stays in the periphery.
+Резкий фокус на нужном в выводе инструментов агента, остальное — на периферии.
 
-Your eye sees sharply only through the fovea, a spot about two degrees wide. Everything else is
-periphery: blurry, but you know it is there and can look at it when you need to. Fovea does the same
-for Claude Code. Before a large tool result (a file read, a grep, a log, a `git log`) reaches the
-model, it is split into blocks, and a fast decision model (System 1) scores every block against the
-task at hand. Relevant blocks pass through verbatim. The rest collapse into a one-line outline, so the
-agent always knows it is looking at a selection and can read further.
+Глаз видит резко только центральной ямкой сетчатки — фовеа, участком примерно в два градуса.
+Всё остальное — периферия: размыто, но вы знаете, что там что-то есть, и можете туда посмотреть.
+Fovea делает то же для Claude Code. Прежде чем большой вывод инструмента (чтение файла, grep, лог,
+`git log`) попадёт в модель, он режется на блоки, и быстрая модель-судья («Система 1») оценивает каждый
+блок относительно текущей задачи. Нужные блоки проходят дословно, остальные сворачиваются в
+строку-оглавление — агент всегда знает, что видит выборку, и может дочитать.
 
-> **Status:** pre-release. The core runs in shadow mode: it records what it would keep and what it
-> would save without changing what the agent sees.
+> **Статус:** до релиза. Ядро работает в теневом режиме: записывает, что оставило бы и сколько
+> сэкономило бы, не меняя того, что видит агент.
 
-## Why
+## Зачем
 
-Irrelevant context costs tokens, and it also makes models reason worse. A filter that silently drops
-text has its own failure, though: the agent cannot know what it did not see. Kahneman called this
-WYSIATI, "what you see is all there is". Fovea is built around avoiding it: it keeps verbatim lines,
-never paraphrases, and every omission is visible.
+Лишний текст в контексте стоит токенов и ухудшает рассуждения модели. Но у фильтра, который молча
+выбрасывает текст, своя беда: агент не знает, чего не увидел. Канеман назвал это WYSIATI — «что вижу,
+то и есть». Fovea устроен вокруг защиты от этого: оставляет строки дословно, никогда не пересказывает,
+и каждый пропуск виден.
 
-## License
+## Лицензия
 
 MIT
