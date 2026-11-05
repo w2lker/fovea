@@ -161,7 +161,7 @@ the transcript (it may lag a step or be missing — then use description + comma
 `<task-notification>`, `<local-command`, `<command-`.
 
 ### Splitting (Bash)
-Detect by the first real command word (skip `cd …&&`, env assignments, `sudo`), then by content:
+Content checks come first and win over the command: lines `^diff --git ` → diff splitter (covers `gh pr diff`, `bkt pr diff`, `git show`); ≥ 2 lines `^commit [0-9a-f]{7,}` → git-log splitter; stdout parses as JSON → JSON splitter. Otherwise detect by the first real command word (skip `cd …&&`, env assignments, `sudo`):
 - `grep`/`rg`/`ag` or lines shaped `path:line:` → one block per file; >20 matches → groups of 20.
 - `git log` → split at `^commit [0-9a-f]{7,}`; `git diff`/`git show` → at `^diff --git`, large files at `^@@`.
 - `ls`/`find`/`tree` → by directory (`ls -R` sections; path prefix).
