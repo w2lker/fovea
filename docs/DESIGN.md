@@ -109,7 +109,7 @@ Still open:
 
 ## Project rules
 
-- Public, MIT, released under Roman's name (GitHub `w2lker`). The repository goes public on launch day.
+- Public, MIT, released under Roman's name (GitHub `w2lker`). Public since 5 Nov 2026; the landing page is served by GitHub Pages from `docs/`.
 - Other context filters are never named in the code, the docs, or the post.
 - All repository docs are in English.
 

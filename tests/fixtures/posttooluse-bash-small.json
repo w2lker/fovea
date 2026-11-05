@@ -2,7 +2,7 @@
   "session_id": "fixture-session",
   "transcript_path": "tests/fixtures/transcript-sample.jsonl",
   "cwd": "/tmp/project",
-  "prompt_id": "b77fd81d-bee6-4ec1-b324-8c8a27f639e6",
+  "prompt_id": "00000000-0000-4000-8000-000000000000",
   "permission_mode": "bypassPermissions",
   "effort": {
     "level": "high"
@@ -10,12 +10,12 @@
   "hook_event_name": "PostToolUse",
   "tool_name": "Bash",
   "tool_input": {
-    "command": "cp /private/tmp/claude-501/-Users-romanbova-Documents-Code-argos/c2dec188-cca3-4a4a-a6e6-c0b36d0d6b6c/scratchpad/settings.before-capture.json ~/.claude/settings.json && echo restored; cd /private/tmp/claude-501/-Users-romanbova-Documents-Code-argos/c2dec188-cca3-4a4a-a6e6-c0b36d0d6b6c/scratchpad && python3 - <<'EOF'\nimport json\nfor line in open('capture.jsonl'):\n    line=line.strip()\n    if not line: continue\n    try: d=json.loads(line)\n    except Exception as e: print('bad line',line[:100]); continue\n    tr=d.get('tool_response')\n    def shape(x,depth=0):\n        if isinstance(x,dict): return {k:shape(v,depth+1) for k,v in x.items()}\n        if isinstance(x,list): return [shape(x[0],depth+1)] if x else []\n        if isinstance(x,str): return f\"str({len(x)}): {x[:60]!r}\"\n        return x\n    print(d.get('tool_name'), 'input keys:', list(d.get('tool_input',{}).keys()))\n    print('  top keys:', sorted(d.keys()))\n    print('  tool_response:', json.dumps(shape(tr),ensure_ascii=False)[:700])\nEOF",
-    "description": "Restore settings and print captured tool_response shapes"
+    "command": "echo hello-out; echo hello-err >&2",
+    "description": "Print two lines"
   },
   "tool_response": {
-    "stdout": "restored\nRead input keys: ['file_path']\n  top keys: ['cwd', 'duration_ms', 'effort', 'hook_event_name', 'permission_mode', 'prompt_id', 'scratchpad_dir', 'session_id', 'tool_input', 'tool_name', 'tool_response', 'tool_use_id', 'transcript_path']\n  tool_response: {\"type\": \"str(4): 'text'\", \"file\": {\"filePath\": \"str(47): '/Users/romanbova/Documents/Code/fovea/CLAUDE.md'\", \"content\": \"str(774): '# CLAUDE.md\\\\n\\\\nFovea is a Claude Code plugin: a filter for too'\", \"numLines\": 13, \"startLine\": 1, \"totalLines\": 13}}\nBash input keys: ['command', 'description']\n  top keys: ['cwd', 'duration_ms', 'effort', 'hook_event_name', 'permission_mode', 'prompt_id', 'scratchpad_dir', 'session_id', 'tool_input', 'tool_name', 'tool_response', 'tool_use_id', 'transcript_path']\n  tool_response: {\"stdout\": \"str(19): 'hello-out\\\\nhello-err'\", \"stderr\": \"str(0): ''\", \"interrupted\": false, \"isImage\": false, \"noOutputExpected\": false}\nRead input keys: ['file_path', 'offset', 'limit']\n  top keys: ['cwd', 'duration_ms', 'effort', 'hook_event_name', 'permission_mode', 'prompt_id', 'scratchpad_dir', 'session_id', 'tool_input', 'tool_name', 'tool_response', 'tool_use_id', 'transcript_path']\n  tool_response: {\"type\": \"str(4): 'text'\", \"file\": {\"filePath\": \"str(52): '/Users/romanbova/Documents/Code/fovea/docs/DESIGN.md'\", \"content\": \"str(239): 'A living document: what has been decided and why. The number'\", \"numLines\": 3, \"startLine\": 3, \"totalLines\": 108}}",
-    "stderr": "\nShell cwd was reset to /Users/romanbova/Documents/Code/argos",
+    "stdout": "hello-out\nhello-err",
+    "stderr": "",
     "interrupted": false,
     "isImage": false,
     "noOutputExpected": false
