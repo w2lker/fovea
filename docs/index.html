@@ -371,7 +371,7 @@ Date:   Thu Oct 16 17:20:03 2026
 </div>
 </section>
 
-<section id="start" class="wrap sec start" aria-labelledby="h-start" style="flex-direction:row;gap:48px">
+<section id="start" class="wrap sec start" aria-labelledby="h-start">
 <div class="stack" style="gap:20px">
 <p class="eyebrow">Quick start</p>
 <h2 id="h-start">Install, then forget it is there.</h2>
@@ -388,26 +388,7 @@ export FOVEA_MODE=shadow
 <span class="c"># 4. After a session: savings and measured losses</span>
 fovea report</pre>
 <p class="small">Register <code>fovea/hook.py</code> as a <code>PostToolUse</code> hook with matcher <code>Bash</code> and a 10 second timeout, and <code>fovea/session_start.py</code> as a <code>SessionStart</code> hook. There is no packaged installer yet.</p>
-<p class="small">In shadow mode Fovea decides and logs but leaves every output unchanged, so you can see what it would have saved and lost on your own sessions. When the agent notices a filter went wrong, it calls <code>fovea note</code>. Those notes show up in <code>fovea report</code> next to the savings.</p>
-</div>
-<div class="stack" style="gap:16px">
-<h3>Configuration</h3>
-<div class="tw">
-<table>
-<thead><tr><th scope="col">Variable</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead>
-<tbody>
-<tr><td>FOVEA_MODE</td><td>active</td><td>active, shadow (log only) or off.</td></tr>
-<tr><td>FOVEA_MODEL</td><td>~typesafe/jev-latest</td><td>Decision model. The only one calibrated.</td></tr>
-<tr><td>FOVEA_API_KEY_ENV</td><td>OPENROUTER_API_KEY</td><td>Name of the variable that holds the judge’s API key.</td></tr>
-<tr><td>FOVEA_BASE_URL</td><td>openrouter.ai/api/alpha/decisions</td><td>Decisions endpoint.</td></tr>
-<tr><td>FOVEA_THRESHOLD</td><td>0.2</td><td>Keep blocks scored at or above this.</td></tr>
-<tr><td>FOVEA_MIN_CHARS</td><td>3500</td><td>Outputs shorter than this pass untouched.</td></tr>
-<tr><td>FOVEA_TIMEOUT</td><td>4 s</td><td>On timeout the output passes through.</td></tr>
-<tr><td>FOVEA_RETENTION_DAYS</td><td>30</td><td>How long full outputs stay in ~/.fovea/out.</td></tr>
-</tbody>
-</table>
-</div>
-<p class="note">All settings are environment variables prefixed FOVEA_. See the repository for the full list.</p>
+<p class="small">In shadow mode Fovea decides and logs but leaves every output unchanged, so you can see what it would have saved and lost on your own sessions. When the agent notices a filter went wrong, it calls <code>fovea note</code>. Those notes show up in <code>fovea report</code> next to the savings. Settings are environment variables; the README lists them.</p>
 </div>
 </section>
 
