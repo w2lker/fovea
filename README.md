@@ -19,7 +19,7 @@ Fovea is a plugin for Claude Code. When a shell command returns a large output, 
 
 ## What the agent sees
 
-Task: *"find when the rate limiter was added"*. The agent runs `git log --stat -n 40`. (Illustrative example.)
+Task: *"find when the rate limiter was added"*. The agent runs `git log --stat -n 40`. (The numbers are from a real run; the commit content is illustrative.)
 
 <p align="center">
 <picture>
@@ -80,8 +80,17 @@ Validated on 5 Nov 2026: 30 tool outputs in six formats, 1,140 blocks, 90 agent 
 
 - **Recall 1.00** at threshold 0.2: every needed block kept in 90 of 90 tasks, with 29% of the text kept (majority vote of three labelers).
 - **Keyword search (BM25)** keeping the same 29%: recall 0.73 overall, 0.42-0.50 on paraphrased tasks.
+- **Calibration:** among 2,940 blocks the judge scored below 0.2, not one was needed.
 - **Robustness:** block position and order have no effect; on tasks with no answer, the highest score is 0.06 or below.
-- **Cost:** about 0.45 s and about $0.0006 per output.
+- **Cost:** median 0.45 s and about $0.0006 per output.
+
+| Format | Text kept (threshold 0.3) |
+|---|---|
+| JSON | 6% |
+| git log | 7% |
+| markdown | 7% |
+| grep | 32% |
+| code | 65% |
 
 <p align="center">
 <picture>
@@ -95,7 +104,7 @@ Source code is the weak spot: files of code keep about 65% of their text, so the
 <details>
 <summary>How the test set was built</summary>
 
-Six formats, 30 outputs, 90 tasks. Labels come from three independent labeler models (Sonnet, Opus, Minimax); Cohen's kappa 0.81-0.93. Still open: live tasks from real sessions, finer splitting of code, a comparison with blind fixed windows, and tasks with no answer in the output. For publication the test set will be rebuilt on a different codebase.
+Six formats, 30 outputs, 90 tasks. Tasks came in three phrasings: with exact identifiers, paraphrased, and casual Russian. Labels come from three independent labeler models (Sonnet, Opus, Minimax); pairwise agreement 97.8-99.3%, Cohen's kappa 0.81-0.93. Still open: live tasks from real sessions, finer splitting of code, a comparison with blind fixed windows, and tasks with no answer in the output. For publication the test set will be rebuilt on a different codebase.
 
 </details>
 

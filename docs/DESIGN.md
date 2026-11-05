@@ -93,6 +93,13 @@ need a separate adapter, which v1 does not ship.
 - **BM25 keeping the same share:** recall 0.73 overall, and 0.42–0.50 on paraphrased tasks.
 - **Limits:** 800 questions per request and ≈33k tokens both go through.
 - **Robustness:** block position and order have no effect, and on tasks with no answer, max p ≤ 0.06.
+- **Tasks** came in three phrasings: with exact identifiers, paraphrased, and casual Russian.
+- **Labeler agreement:** 97.8–99.3% pairwise (kappa above).
+- **Calibration:** among 2,940 blocks scored below 0.2, none was needed.
+- **Text kept by format at threshold 0.3** (no losses except one markdown block): JSON 6%, git log 7%,
+  markdown 7%, grep 32%, code 65%.
+- **Latency:** median 0.45 s per output.
+- **Live example (5 Nov):** `git log --stat -n 40`, 29,658 chars → 1,261 chars (4%), 1 of 41 blocks kept.
 
 Still open:
 - live tasks from real sessions (a week in shadow mode);
