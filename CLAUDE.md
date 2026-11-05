@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-Fovea — плагин для Claude Code: фильтр выводов инструментов на быстрой модели-судье (Jev), дословный
-отбор блоков со строкой-оглавлением выброшенного. Все решения и цифры проверки — в
-[docs/DESIGN.md](docs/DESIGN.md); читать первым, обновлять при каждом новом решении.
+Fovea is a Claude Code plugin: a filter for tool outputs built on a fast decision model (Jev). It keeps
+the relevant blocks verbatim and collapses the dropped ones into an outline line. Every decision and the
+validation numbers are in [docs/DESIGN.md](docs/DESIGN.md). Read it first, and update it with every new
+decision.
 
-- Репозиторий: `git@github.com:w2lker/fovea.git`, приватный до запуска. Ветка `main`.
-- Пакетные имена `fovea` на PyPI и npm заняты — для пакета суффикс (например `fovea-cc`).
-- Другие фильтры контекста по имени не упоминать нигде (код, README, доки, коммиты).
-- Ключ Jev: `OPENROUTER_API_KEY` (1Password `Dotfiles/openrouter-jev`); в репозиторий не попадает.
+- Repository: `git@github.com:w2lker/fovea.git`, private until launch. Branch `main`.
+- **All repository docs, comments and commit messages are in English.**
+- The bare name `fovea` is taken on PyPI and npm, so the package needs a suffix (e.g. `fovea-cc`).
+- Never name other context filters anywhere: code, README, docs, commits.
+- Jev key: `OPENROUTER_API_KEY` (1Password `Dotfiles/openrouter-jev`). It never goes into the repository.

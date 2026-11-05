@@ -1,83 +1,93 @@
-# Fovea — проектные решения
+# Fovea: design decisions
 
-Живой документ: что решено и почему. Источник цифр — проверка 5 ноя 2026 (результаты и скрипты пока в
-личном репозитории `argos/documents/2026-11-05-system1-recon/`; для публикации набор будет собран
-заново на другом коде).
+A living document: what has been decided and why. The numbers come from the validation run of
+5 Nov 2026. Its results and scripts currently live in a private repository; for publication the test
+set will be rebuilt on a different codebase.
 
-## Механизм
+## Mechanism
 
-1. Хук `PostToolUse` Claude Code получает вывод инструмента (`tool_response`), вызов (`tool_input`) и
-   путь к транскрипту. С версии 2.1.121 хук может подменить вывод любого инструмента через
-   `hookSpecificOutput.updatedToolOutput`; значение должно совпадать со структурой вывода инструмента
-   (для Bash — `stdout`, `stderr`, `interrupted`, `isImage`; для остальных — снять с реальных вызовов),
-   иначе подмена молча игнорируется.
-2. Задача агента берётся из транскрипта: последнее сообщение пользователя + последнее рассуждение агента
-   + сама команда или путь. Транскрипт пишется асинхронно и может отставать на шаг.
-3. Вывод режется на блоки (см. ниже), блоки размечаются `[A001]…[/A001]` и целиком кладутся в `state`.
-4. **Один запрос к Jev на вывод:** по `noul`-вопросу на каждый блок. **Задача повторяется в каждом
-   вопросе** — один раз в шапке `state` даёт p 0.35 вместо 0.96 у нужного блока.
-5. Оставляем блоки с p ≥ **0.2**. Если ни один блок не прошёл порог — вывод проходит целиком.
+1. A Claude Code `PostToolUse` hook receives the tool output (`tool_response`), the call
+   (`tool_input`) and the transcript path. Since Claude Code 2.1.121, a hook can replace the output of
+   any tool via `hookSpecificOutput.updatedToolOutput`. The value must match the tool's output shape
+   (for Bash: `stdout`, `stderr`, `interrupted`, `isImage`; for other tools, capture the shape from real
+   calls). Otherwise the replacement is silently ignored.
+2. The agent's task is taken from the transcript: the user's latest message, plus the agent's latest
+   reasoning, plus the command or path itself. The transcript is written asynchronously and may lag one
+   step behind.
+3. The output is split into blocks (see below). The blocks are labeled `[A001]…[/A001]` and placed whole
+   into `state`.
+4. **One Jev request per output,** with one `noul` question per block. **Repeat the task in every
+   question.** Stating it once at the top of `state` gives the relevant block p 0.35 instead of 0.96.
+5. Keep blocks with p ≥ **0.2**. If no block passes the threshold, the whole output passes through.
 
-## Разбивка на блоки
+## Splitting into blocks
 
-Один блок — одна вещь, которая агенту либо нужна, либо нет. Тип определяется по инструменту и команде,
-потом по содержимому.
+One block is one thing the agent either needs or does not. The type is determined by the tool and the
+command first, and by the content second.
 
-| Источник | Блок |
+| Source | Block |
 |---|---|
-| Read: markdown | раздел по `##`, крупный — по `###` |
-| Read: код | функция / класс / структура по синтаксическому дереву; крупный класс — по методам |
-| Read: JSON / YAML / TOML | элемент массива или ключ верхнего уровня |
-| grep / rg | совпадения одного файла; много совпадений — пачки по ~20 |
-| git log | коммит |
-| git diff | файл, крупный — ханк |
-| тесты, сборка | тест или ошибка |
-| ls / find | папка |
-| остальное | абзац; без абзацев — окно ~40 строк |
+| Read: markdown | section at `##`; large sections at `###` |
+| Read: code | function / class / struct from the syntax tree; large classes by method |
+| Read: JSON / YAML / TOML | array element or top-level key |
+| grep / rg | matches from one file; many matches in groups of ~20 |
+| git log | commit |
+| git diff | file; large files by hunk |
+| tests, builds | test or error |
+| ls / find | directory |
+| anything else | paragraph; with no paragraphs, windows of ~40 lines |
 
-- Меньше ~200 символов — склеить с соседом (крошечные блоки Jev оценивает плохо: 0.3–0.6 вместо 0.96).
-- Больше ~2–3 тыс. символов — резать по следующей границе (иначе нет экономии: на коде остаётся 65%).
-- Весь запрос — до ~30k токенов; больше — несколько параллельных запросов.
-- У каждого блока «адрес»: путь, диапазон строк, цепочка заголовков, имя класса.
+- Under ~200 characters: merge with a neighbor. Jev scores tiny blocks poorly: 0.3–0.6 instead of 0.96.
+- Over ~2–3k characters: split at the next boundary down. Otherwise there is no saving; on code, 65% of
+  the text stays.
+- The whole request stays under ~30k tokens. Anything larger becomes several parallel requests.
+- Every block carries an "address": path, line range, heading chain, class name.
 
-## Что видит агент
+## What the agent sees
 
-- Оставленные блоки — в исходном порядке, с номерами строк.
-- Выброшенные — одной строкой-оглавлением: `[пропущено 12 блоков, строки 120–460: def parse_config(),
-  class Cache… полный вывод: <путь>]`. Полный вывод сохраняется в файл.
+- Kept blocks appear in their original order, with line numbers.
+- Dropped blocks collapse into one outline line, for example `[12 blocks skipped, lines 120–460:
+  def parse_config(), class Cache… full output: <path>]`. The full output is saved to a file.
 
-## Никогда не фильтруем
+## Never filtered
 
-- Выводы меньше ~1000 токенов.
-- Ошибки и трассировки стека.
-- Чтение файла, который агент собирается править (правке нужен точный текст).
-- Вывод, где агент сам выбрал диапазон (`sed -n 10,50p`, Read с `offset`).
+- Outputs under ~1000 tokens.
+- Errors and stack traces.
+- Reads of a file the agent is about to edit, since an edit needs the exact text.
+- Output where the agent already chose the range itself (`sed -n 10,50p`, Read with `offset`).
 
-## Режимы
+## Modes
 
-- **Тень (по умолчанию):** решить и записать в журнал, вывод не менять. Пользователь видит «сэкономил бы
-  X%, потерял бы Y» на своих сессиях до включения.
-- **Активный:** подмена вывода.
-- Нет ключа, Jev недоступен, таймаут — вывод проходит без изменений.
+- **Shadow (default):** decide and log, but leave the output unchanged. Users see "would have saved X%,
+  would have lost Y" on their own sessions before turning it on.
+- **Active:** replace the output.
+- With no key, Jev unavailable, or a timeout, the output passes through unchanged.
 
-## Модель
+## Model
 
-TypeSafe Jev через OpenRouter (`openrouter/~typesafe/jev-latest`, эндпоинт `api/alpha/decisions` —
-альфа, может измениться). Возвращает вероятность на вопрос, не генерирует текст; ~0.45 с и ~$0.0006 на
-вывод в проверке. Шкала монотонна, но середина завышена (p 0.7–0.9 → нужна половина блоков): как фильтр
-годится, как вероятность буквально — нет.
+TypeSafe Jev via OpenRouter (`openrouter/~typesafe/jev-latest`, endpoint `api/alpha/decisions`). The
+endpoint is alpha and may change. Jev returns one probability per question and generates no text. In
+validation it took ~0.45 s and cost ~$0.0006 per output. The scale is monotonic, but the middle runs
+high (p 0.7–0.9 means only about half of those blocks are needed). That makes it fine as a filter, but
+the numbers cannot be read literally as probabilities.
 
-## Проверка (5 ноя 2026, кратко)
+## Validation (5 Nov 2026, summary)
 
-30 выводов, 6 форматов, 1140 блоков, 90 задач; три независимых разметчика (Sonnet, Opus, Minimax;
-каппа 0.81–0.93). По большинству голосов при пороге 0.2: полнота 1.00 (90/90), остаётся 29% текста;
-BM25 при той же доле — 0.73, на перефразированных задачах 0.42–0.50. 800 вопросов в запросе и ≈33k
-токенов проходят; позиция и порядок блоков не влияют; на задачах без ответа max p ≤ 0.06.
+- **Test set:** 30 outputs in 6 formats, 1140 blocks, 90 tasks.
+- **Labels:** three independent labelers (Sonnet, Opus, Minimax), Cohen's kappa 0.81–0.93.
+- **At threshold 0.2, by majority vote:** recall 1.00 (90/90), with 29% of the text kept.
+- **BM25 keeping the same share:** recall 0.73 overall, and 0.42–0.50 on paraphrased tasks.
+- **Limits:** 800 questions per request and ≈33k tokens both go through.
+- **Robustness:** block position and order have no effect, and on tasks with no answer, max p ≤ 0.06.
 
-Открыто: живые задачи из реальных сессий (неделя тени), разбивка кода мельче, сравнение со «слепыми»
-окнами, «трудные» пустые задачи.
+Still open:
+- live tasks from real sessions (a week in shadow mode);
+- finer splitting of code;
+- comparison with blind fixed windows;
+- "hard" tasks with no answer.
 
-## Правила проекта
+## Project rules
 
-- Публичный, MIT, от имени Романа (GitHub `w2lker`). Публичным репозиторий станет в день запуска.
-- Другие фильтры контекста в коде, документации и посте по имени не упоминаем.
+- Public, MIT, released under Roman's name (GitHub `w2lker`). The repository goes public on launch day.
+- Other context filters are never named in the code, the docs, or the post.
+- All repository docs are in English.
