@@ -246,3 +246,22 @@ Plain-text summary to stdout, from logs, notes and transcripts — nothing leave
 - Recoveries: count, share of replaced outputs, list of ids with their commands.
 - Notes: every note with the matched command, task, kept/total blocks, and the dropped labels with
   scores.
+
+### v1.1 implementation decisions (recorded from the implementer's report)
+- Recovery check runs before the shape/size/stderr/error checks (after mode and key), so short recovery
+  reads are logged too. `recovered_id` = first `<8 hex>.txt` in the command; a Fovea-home command with no
+  id logs `recovered_id: null`.
+- `out_id` is logged only when the file is saved; for shadow records the report derives it from
+  `tool_use_id`.
+- `fovea note`: extra words join into the note; empty note, missing argument or an id starting with `-`
+  → usage on stderr, exit 2. The id is normalized (path, `.txt`, `[fovea` prefix, trailing `:` stripped,
+  lowercased). Matching searches all logs and prefers the latest `replaced` line.
+- SessionStart hint is suppressed only for `FOVEA_MODE=off`; it does not read stdin.
+- `fovea report --days N`: last N×24 h by `ts`; N must be an integer ≥ 1 (else exit 2). Latency p50/p95
+  for eligible calls and for all calls.
+- Losses: output text from the transcript's `toolUseResult.stdout`, else the `tool_result` content (JSON
+  re-printed as the splitter saw it); a range past the end → unmeasured. "Would have been dropped" = not
+  in the logged `kept`. "Used" = a stripped block line of ≥ 25 non-space chars found in assistant text or
+  any string inside tool inputs of the next 20 assistant records (thinking excluded). Count = lost blocks;
+  share = outputs with ≥ 1 loss / measured outputs.
+- Recoveries share = distinct recovered ids / replaced outputs in the window.

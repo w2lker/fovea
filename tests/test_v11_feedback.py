@@ -46,7 +46,7 @@ class HeaderTests(V11Base):
     def test_header_carries_output_id_and_log_fields(self):
         p, r = self.replace_run()
         self.assertEqual(r.rc, 0)
-        first = r.stdout.split("\n")[0]
+        first = r.json()["hookSpecificOutput"]["updatedToolOutput"]["stdout"].split("\n")[0]
         m = NEW_HEADER_RE.match(first)
         self.assertTrue(m, "bad header: %r" % first)
         out_file = self.out_path()
