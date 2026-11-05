@@ -382,13 +382,10 @@ ln -s "$PWD/fovea/bin/fovea" ~/.local/bin/fovea
 <span class="c"># 2. Give the judge an API key (OpenRouter by default)</span>
 export OPENROUTER_API_KEY=…
 
-<span class="c"># 3. Register the hook in Claude Code, then watch it first</span>
-export FOVEA_MODE=shadow
-
-<span class="c"># 4. After a session: savings and measured losses</span>
+<span class="c"># 3. After a session: savings and measured losses</span>
 fovea report</pre>
 <p class="small">Register <code>fovea/hook.py</code> as a <code>PostToolUse</code> hook with matcher <code>Bash</code> and a 10 second timeout, and <code>fovea/session_start.py</code> as a <code>SessionStart</code> hook. There is no packaged installer yet.</p>
-<p class="small">In shadow mode Fovea decides and logs but leaves every output unchanged, so you can see what it would have saved and lost on your own sessions. When the agent notices a filter went wrong, it calls <code>fovea note</code>. Those notes show up in <code>fovea report</code> next to the savings. Settings are environment variables; the README lists them.</p>
+<p class="small">When the agent notices a filter went wrong, it calls <code>fovea note</code>. Those notes show up in <code>fovea report</code> next to the savings. Settings are environment variables; the README lists them.</p>
 </div>
 </section>
 
