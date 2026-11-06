@@ -375,17 +375,13 @@ Date:   Thu Oct 16 17:20:03 2026
 <div class="stack" style="gap:20px">
 <p class="eyebrow">Quick start</p>
 <h2 id="h-start">Install, then forget it is there.</h2>
-<pre class="code"><span class="c"># 1. Get the code (Python 3.9+, standard library only)</span>
-git clone https://github.com/w2lker/fovea
-ln -s "$PWD/fovea/bin/fovea" ~/.local/bin/fovea
+<pre class="code"><span class="c"># In Claude Code (2.1.275+)</span>
+/plugin install fovea --marketplace w2lker/fovea
 
-<span class="c"># 2. Give the judge an API key (OpenRouter by default)</span>
-export OPENROUTER_API_KEY=…
-
-<span class="c"># 3. After a session: savings and measured losses</span>
+<span class="c"># After a session: savings and measured losses</span>
 fovea report</pre>
-<p class="small">Register <code>fovea/hook.py</code> as a <code>PostToolUse</code> hook with matcher <code>Bash</code> and a 10 second timeout, and <code>fovea/session_start.py</code> as a <code>SessionStart</code> hook. There is no packaged installer yet.</p>
-<p class="small">When the agent notices a filter went wrong, it calls <code>fovea note</code>. Those notes show up in <code>fovea report</code> next to the savings. Settings are environment variables; the README lists them.</p>
+<p class="small">The install dialog asks for an OpenRouter API key for the default judge; leave it empty if <code>OPENROUTER_API_KEY</code> is already set. Requires <code>python3</code> 3.9+, standard library only. When the agent notices a filter went wrong, it calls <code>fovea note</code>; those notes show up in <code>fovea report</code> next to the savings. Settings are environment variables; the README lists them.</p>
+<p class="small">No telemetry. Only the blocks of a large output and a short task description go to the judge; logs and saved outputs stay in <code>~/.fovea</code>.</p>
 </div>
 </section>
 

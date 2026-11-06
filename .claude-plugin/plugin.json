@@ -1,0 +1,19 @@
+{
+  "name": "fovea",
+  "version": "0.1.0",
+  "description": "Filters large Bash outputs to the blocks relevant to the agent's task, verbatim, with an outline of what was skipped. A fast decision model (TypeSafe Jev via OpenRouter) scores each block; the rest stays one cat away.",
+  "author": { "name": "Roman Bova", "url": "https://github.com/w2lker" },
+  "homepage": "https://w2lker.github.io/fovea/",
+  "repository": "https://github.com/w2lker/fovea",
+  "license": "MIT",
+  "keywords": ["context", "tool-output", "filter", "hooks", "tokens"],
+  "userConfig": {
+    "openrouter_api_key": {
+      "type": "string",
+      "title": "OpenRouter API key",
+      "description": "Key for the default judge (TypeSafe Jev via OpenRouter). Leave empty if OPENROUTER_API_KEY is already set in your environment. Without a key Fovea does nothing.",
+      "sensitive": true,
+      "required": false
+    }
+  }
+}

@@ -66,7 +66,10 @@ def load(env=None) -> Config:
         mode_valid=mode_valid,
         base_url=env.get("FOVEA_BASE_URL", "").strip() or DEFAULT_BASE_URL,
         key_env=key_env,
-        api_key=env.get(key_env, "").strip(),
+        # The plugin install dialog stores the key as a sensitive user option, which
+        # Claude Code exports to hooks as CLAUDE_PLUGIN_OPTION_<KEY>.
+        api_key=(env.get(key_env, "").strip()
+                 or env.get("CLAUDE_PLUGIN_OPTION_OPENROUTER_API_KEY", "").strip()),
         model=env.get("FOVEA_MODEL", "").strip() or DEFAULT_MODEL,
         threshold=_float(env, "FOVEA_THRESHOLD", 0.2),
         timeout=_float(env, "FOVEA_TIMEOUT", 4.0) or 4.0,

@@ -7,3 +7,4 @@ __pycache__/
 .DS_Store
 shadow-log/
 docs/design/
+.DS_Store

@@ -276,3 +276,18 @@ Plain-text summary to stdout, from logs, notes and transcripts — nothing leave
   any string inside tool inputs of the next 20 assistant records (thinking excluded). Count = lost blocks;
   share = outputs with ≥ 1 loss / measured outputs.
 - Recoveries share = distinct recovered ids / replaced outputs in the window.
+
+## Packaging (5 Nov 2026)
+
+- The repository is a Claude Code plugin and its own marketplace: `.claude-plugin/plugin.json`,
+  `.claude-plugin/marketplace.json` (marketplace `w2lker`, entry `source: "./"`), hooks in
+  `hooks/hooks.json` with paths from `${CLAUDE_PLUGIN_ROOT}`. Install:
+  `/plugin install fovea --marketplace w2lker/fovea`.
+- `bin/` is on the Bash tool's PATH while the plugin is enabled, so the agent can run `fovea note` and
+  `fovea report` without any setup.
+- The judge key can come from the install dialog (`userConfig.openrouter_api_key`, sensitive), exported
+  to hooks as `CLAUDE_PLUGIN_OPTION_OPENROUTER_API_KEY`; the `FOVEA_API_KEY_ENV` variable wins if set.
+- Data stays in `~/.fovea` rather than `${CLAUDE_PLUGIN_DATA}`: the CLI run from Bash does not receive
+  the plugin variables, and hook and CLI must share one location.
+- Anthropic directory submission (later): needs an icon (square PNG, 512–2048 px); hooks that run
+  Python files are held for manual review; the README must disclose what is sent to the judge (done).

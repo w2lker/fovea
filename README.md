@@ -110,46 +110,50 @@ Six formats, 30 outputs, 90 tasks. Tasks came in three phrasings: with exact ide
 
 ## Install
 
-Fovea is pre-release and installs by hand.
+Fovea is a Claude Code plugin. In Claude Code, run:
 
-**Requirements:** Claude Code 2.1.121 or later (the version that lets a hook replace a tool's output), Python 3.9 or later (standard library only), and an OpenRouter key in `OPENROUTER_API_KEY` for the default judge.
-
-```bash
-# 1. Clone, and put the CLI on your PATH
-git clone git@github.com:w2lker/fovea.git ~/fovea
-ln -s ~/fovea/bin/fovea ~/.local/bin/fovea
-
-# 2. Give the judge an API key
-export OPENROUTER_API_KEY=...
+```
+/plugin install fovea --marketplace w2lker/fovea
 ```
 
-Then add two hooks to `~/.claude/settings.json` (replace `~/fovea` with the absolute path to your clone):
+On Claude Code older than 2.1.275, add the marketplace first: `/plugin marketplace add w2lker/fovea`, then `/plugin install fovea@w2lker`.
+
+The install dialog asks for an **OpenRouter API key** for the default judge. You can leave it empty if `OPENROUTER_API_KEY` is already set in your environment. Without a key, Fovea does nothing.
+
+**Requirements:** Claude Code 2.1.121 or later (the version that lets a hook replace a tool's output) and `python3` 3.9 or later on your PATH. Fovea uses the standard library only.
+
+The plugin adds two hooks. The `PostToolUse` hook on Bash does the filtering. The `SessionStart` hook adds a short note, about 40 tokens, telling the agent how to read Fovea's headers and how to report a bad filter.
+
+**Turn it off:** `/plugin disable fovea@w2lker`, or set `FOVEA_MODE=off`.
+
+<details>
+<summary>Manual install without the plugin system</summary>
+
+Clone the repository, put `bin/fovea` on your PATH, and add the two hooks to `~/.claude/settings.json`. Use absolute paths to your clone.
 
 ```json
 {
   "hooks": {
     "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "python3 ~/fovea/fovea/hook.py", "timeout": 10 }
-        ]
-      }
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "python3 /path/to/fovea/fovea/hook.py", "timeout": 10 } ] }
     ],
     "SessionStart": [
-      {
-        "hooks": [
-          { "type": "command", "command": "python3 ~/fovea/fovea/session_start.py" }
-        ]
-      }
+      { "hooks": [ { "type": "command", "command": "python3 /path/to/fovea/fovea/session_start.py" } ] }
     ]
   }
 }
 ```
 
-The `PostToolUse` hook does the filtering. The `SessionStart` hook adds a short note (about 40 tokens) telling the agent how to read Fovea's headers and how to report a bad filter.
+</details>
 
-**Turn it off:** set `FOVEA_MODE=off`. With no API key, Fovea does nothing.
+### What leaves your machine
+
+There is no telemetry. For each large Bash output that Fovea filters, it sends the following to the judge endpoint (by default OpenRouter, which routes to TypeSafe Jev):
+
+- the output, split into blocks;
+- a short task description made of the command, its description, and short excerpts of your latest message and the agent's latest reply.
+
+Nothing else is sent. Logs, notes and saved full outputs stay in `~/.fovea` on your machine. Full outputs are deleted after 30 days. Logs never contain the output text.
 
 ### Report and notes
 
@@ -158,7 +162,7 @@ The `PostToolUse` hook does the filtering. The `SessionStart` hook adds a short 
 fovea report --days 7
 ```
 
-When the agent notices that filtering went wrong, it runs `fovea note <id> "<what went wrong>"`. Notes appear in `fovea report` next to the savings. The report is plain text built from local logs, notes and transcripts; nothing leaves your machine except the blocks sent to the judge.
+Inside Claude Code the `fovea` command is on the agent's PATH, so you can simply ask the agent to run the report. When the agent notices that filtering went wrong, it runs `fovea note <id> "<what went wrong>"`. Notes appear in `fovea report` next to the savings.
 
 ### Configuration
 

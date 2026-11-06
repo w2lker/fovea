@@ -318,3 +318,13 @@ class HarnessLimitTests(HookCase):
         r = self.run_hook(self.payload(stdout=out))
         self.assertEqual(r.stdout, "")
         self.assertEqual(self.read_log()[-1]["reason"], "harness_persisted")
+
+
+class PluginKeyTests(HookCase):
+    """The plugin install dialog exports the key as CLAUDE_PLUGIN_OPTION_OPENROUTER_API_KEY."""
+
+    def test_plugin_option_key_is_used_when_env_key_missing(self):
+        r = self.run_hook(self.payload(), OPENROUTER_API_KEY=None,
+                          CLAUDE_PLUGIN_OPTION_OPENROUTER_API_KEY="plugin-key")
+        self.assertTrue(r.stdout.strip(), "expected filtering with the plugin-option key")
+        self.assertEqual(self.stub.requests[0]["headers"].get("authorization"), "Bearer plugin-key")

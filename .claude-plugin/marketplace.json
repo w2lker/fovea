@@ -1,0 +1,15 @@
+{
+  "name": "w2lker",
+  "owner": {
+    "name": "Roman Bova",
+    "url": "https://github.com/w2lker"
+  },
+  "description": "Plugins by Roman Bova for Claude Code.",
+  "plugins": [
+    {
+      "name": "fovea",
+      "source": "./",
+      "description": "Sharp focus on what matters in your coding agent's tool output; the rest stays in the periphery."
+    }
+  ]
+}
