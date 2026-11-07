@@ -291,3 +291,51 @@ Plain-text summary to stdout, from logs, notes and transcripts — nothing leave
   the plugin variables, and hook and CLI must share one location.
 - Anthropic directory submission (later): needs an icon (square PNG, 512–2048 px); hooks that run
   Python files are held for manual review; the README must disclose what is sent to the judge (done).
+
+## Considered and rejected: judge-driven compaction (6 Nov 2026)
+
+**Idea.** At compaction time, instead of Claude Code's summary, ask the judge which old tool calls and
+results are still needed, drop the rest, and keep everything else verbatim.
+
+**Mechanics (checked against Claude Code 2.1.319).**
+- A command `PreCompact` hook cannot replace the compaction result. Its input is `trigger`,
+  `custom_instructions` and the session fields (transcript path included, no messages). It can only
+  block compaction or append its stdout to the summarizer's instructions. `PostCompact` only sees the
+  finished summary.
+- Steering the summary through `PreCompact` saves nothing: the summarizer still reads the whole
+  history, the result is still a model-written summary, and asking it to keep more verbatim only makes
+  the summary longer.
+- Replacing the messages is possible only from a function hook (`session.compact`), which is an
+  in-process JS/TS module, early access behind `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, with an API that
+  may change between releases. Such a module can call Python through `$.process.run`, so the language
+  is not the obstacle; the flag is.
+
+**Why it does not save money.** The context is prompt-cached. Rough Anthropic ratios: cache read 0.1×
+base input, cache write 1.25× (5 min TTL) or 2× (1 h TTL). Removing anything from the middle
+invalidates the cache from that point on, so the pruned remainder is written again.
+
+| Context 150k, judge drops | One-time rewrite (1 h TTL) | Saved per later turn | Break-even |
+|---|---|---|---|
+| half (75k kept) | 75k × 2 = 150k | 75k × 0.1 = 7.5k | ~20 turns |
+| a quarter (112.5k kept) | 112.5k × 2 = 225k | 37.5k × 0.1 = 3.75k | ~60 turns |
+
+(Units: tokens at base input price. With a 5 min TTL the break-even is ~12 and ~37 turns.)
+
+Claude Code's own summary is cheaper still: one mostly cached read of the history plus a few thousand
+output tokens, after which every turn reads a small summary. Judge-driven pruning generates no output
+tokens, but keeps far more context. What it buys is fidelity (nothing is paraphrased, so paths,
+errors and constraints survive) and speed (one fast judge request instead of a long summary
+generation), not cost. The one exception is a cold cache (a break longer than the TTL): the whole
+context is rewritten anyway, and then smaller is simply cheaper.
+
+What compaction actually protects is the context window (a hard limit), attention quality on long
+contexts, and per-turn latency. Not money.
+
+**Why filtering at entry is the right place.** Fovea's `PostToolUse` filter acts before the text enters
+the context. Nothing cached is invalidated: a dropped token is never written to the cache (1.25–2× per
+token) and never re-read on every later turn (0.1× per turn for the rest of the session). Filtering on
+the way in is cheap; cleaning up afterwards is expensive. This is the argument for the README and the
+post.
+
+**Revisit if** function hooks become generally available and a compaction mode is wanted for fidelity
+rather than cost, or if long sessions with cold caches turn out to be common.
