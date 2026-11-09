@@ -1,6 +1,6 @@
 {
   "name": "fovea",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Filters large Bash outputs to the blocks relevant to the agent's task, verbatim, with an outline of what was skipped. A fast decision model (TypeSafe Jev via OpenRouter) scores each block; the rest stays one cat away.",
   "author": { "name": "Roman Bova", "url": "https://github.com/w2lker" },
   "homepage": "https://w2lker.github.io/fovea/",

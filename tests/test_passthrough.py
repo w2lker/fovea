@@ -279,7 +279,23 @@ class JudgePassTests(PassBase):
 
     def test_threshold_boundary_is_inclusive(self):
         self.stub.score = lambda l, t: 0.2 if NEEDLE in t else 0.0
+        r = self.run_hook(self.payload(), FOVEA_MIN_TOP="0.2")
+        self.assertNotEqual(r.stdout, "")
+
+    def test_low_contrast_passes_through(self):
+        # every block lukewarm: the judge does not know what the agent is after
+        self.stub.score = lambda l, t: 0.45 if NEEDLE in t else 0.15
+        self.assert_pass(self.payload(), expect_request=True)
+        self.assertEqual(self.read_log()[-1]["reason"], "low_contrast")
+
+    def test_min_top_boundary_is_inclusive(self):
+        self.stub.score = lambda l, t: 0.5 if NEEDLE in t else 0.01
         r = self.run_hook(self.payload())
+        self.assertNotEqual(r.stdout, "")
+
+    def test_min_top_is_configurable(self):
+        self.stub.score = lambda l, t: 0.45 if NEEDLE in t else 0.01
+        r = self.run_hook(self.payload(), FOVEA_MIN_TOP="0.4")
         self.assertNotEqual(r.stdout, "")
 
     def test_threshold_is_configurable(self):
@@ -296,7 +312,10 @@ if __name__ == "__main__":
 
 
 class HarnessLimitTests(HookCase):
-    """Claude Code cuts Bash output at BASH_MAX_OUTPUT_LENGTH (default 30000) and saves it itself."""
+    """Claude Code cuts Bash output at BASH_MAX_OUTPUT_LENGTH (default 30000) and saves it itself.
+
+    These payloads carry no persistedOutputPath (older Claude Code); with it see test_persisted.py.
+    """
 
     def test_output_at_the_harness_limit_passes_through(self):
         out = make_output(n=200)

@@ -45,9 +45,11 @@ class Config:
     api_key: str
     model: str
     threshold: float
+    min_top: float
     timeout: float
     min_chars: int
     harness_limit: int
+    max_persisted_bytes: int
     shadow_sample: float
     home: str
     retention_days: float
@@ -72,11 +74,18 @@ def load(env=None) -> Config:
                  or env.get("CLAUDE_PLUGIN_OPTION_OPENROUTER_API_KEY", "").strip()),
         model=env.get("FOVEA_MODEL", "").strip() or DEFAULT_MODEL,
         threshold=_float(env, "FOVEA_THRESHOLD", 0.2),
+        # Replace only when some block is clearly relevant. In live use a vague task (the agent just
+        # wants to read a document) gives every block 0.15-0.45 and the threshold cuts on noise; in
+        # validation every task had a block >= 0.54.
+        min_top=_float(env, "FOVEA_MIN_TOP", 0.5),
         timeout=_float(env, "FOVEA_TIMEOUT", 4.0) or 4.0,
         min_chars=_int(env, "FOVEA_MIN_CHARS", 3500),
-        # Claude Code truncates Bash output at this many characters before hooks see it,
+        # Claude Code truncates Bash output at this many UTF-8 bytes before hooks see it,
         # and persists the full output itself.
         harness_limit=_int(env, "BASH_MAX_OUTPUT_LENGTH", 30000),
+        # Above the limit Claude Code saves the full output to a file and hands the hook its
+        # path; files larger than this pass through (too many judge requests for the timeout).
+        max_persisted_bytes=_int(env, "FOVEA_MAX_PERSISTED_BYTES", 500_000),
         shadow_sample=min(sample, 1.0),
         home=os.path.abspath(os.path.expanduser(home)),
         retention_days=_float(env, "FOVEA_RETENTION_DAYS", 30.0),

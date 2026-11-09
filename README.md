@@ -175,6 +175,7 @@ All settings are environment variables.
 | `FOVEA_API_KEY_ENV` | `OPENROUTER_API_KEY` | Name of the variable that holds the key. |
 | `FOVEA_MODEL` | `~typesafe/jev-latest` | Decision model. The only one calibrated so far. |
 | `FOVEA_THRESHOLD` | `0.2` | Keep blocks scored at or above this. |
+| `FOVEA_MIN_TOP` | `0.5` | Replace only if some block scores at least this; otherwise the judge is unsure and the output passes whole. |
 | `FOVEA_TIMEOUT` | `4` | Judge timeout in seconds; on timeout the output passes through. |
 | `FOVEA_MIN_CHARS` | `3500` | Smaller outputs pass untouched (about 1,000 tokens). |
 | `FOVEA_SHADOW_SAMPLE` | `0.15` | Share of eligible outputs left unchanged but scored, to measure real losses. |

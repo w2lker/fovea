@@ -110,6 +110,7 @@ LOG_FIELDS = (
     "ts", "session_id", "tool_use_id", "cwd", "command", "task", "mode", "action", "reason",
     "splitter", "n_blocks", "block_lines", "scores", "kept", "chars_total", "chars_kept",
     "latency_ms", "cost", "out_path", "out_id", "transcript_path", "recovered_id", "error",
+    "persisted", "persisted_bytes", "persisted_unreadable", "budget_dropped",
 )
 
 

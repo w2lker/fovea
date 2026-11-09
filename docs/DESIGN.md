@@ -137,20 +137,22 @@ Bash carries ~78% of tool-output volume. Not installed into Claude Code until Ro
 | `FOVEA_API_KEY_ENV` | `OPENROUTER_API_KEY` |
 | `FOVEA_MODEL` | `~typesafe/jev-latest` |
 | `FOVEA_THRESHOLD` | `0.2` |
+| `FOVEA_MIN_TOP` | `0.5` (no block this high → pass through, `low_contrast`) |
 | `FOVEA_TIMEOUT` | `4` seconds (HTTP) |
 | `FOVEA_MIN_CHARS` | `3500` (≈1000 tokens) |
 | `FOVEA_SHADOW_SAMPLE` | `0.15` |
 | `FOVEA_HOME` | `~/.fovea` |
 | `FOVEA_RETENTION_DAYS` | `30` |
 | `FOVEA_MAX_STORE_MB` | `500` |
+| `FOVEA_MAX_PERSISTED_BYTES` | `500000` (larger persisted outputs pass through) |
 
 ### Pass through unchanged (log the reason) when
 - `tool_name` is not `Bash`; mode `off`; no API key in the environment.
 - `stdout` shorter than `FOVEA_MIN_CHARS`; `interrupted` or `isImage` true.
-- `stdout` at Claude Code's Bash limit (`BASH_MAX_OUTPUT_LENGTH`, default 30000, counted in **UTF-8 bytes**) → reason
-  `harness_persisted`. Found live on 5 Nov: Claude Code cuts the output to the limit *before* the hook
-  sees it, saves the full raw output to its own file, and shows the model only a 2 KB preview of the
-  hook's replacement — so a selection would be both incomplete and cut off.
+- `stdout` at Claude Code's Bash limit (`BASH_MAX_OUTPUT_LENGTH`, default 30000, counted in **UTF-8 bytes**)
+  **and** the full text can't be read from `persistedOutputPath` (field missing in older Claude Code, file
+  gone) → reason `harness_persisted`. With the path, the output is filtered from the full file; see
+  "Outputs above the harness limit" below. A file above `FOVEA_MAX_PERSISTED_BYTES` → `persisted_too_large`.
 - `stderr` non-empty after removing lines starting with `Shell cwd was reset to ` (a harness note).
 - Error output, checked in the **last 30 lines only** and by message shape, not the bare word:
   `Traceback (most recent call last)`, `^\s*(error|Error|ERROR)([…])?: ` (e.g. `error[E0425]: `), `^\s*ERROR\b`,
@@ -164,7 +166,41 @@ Bash carries ~78% of tool-output volume. Not installed into Claude Code until Ro
   `xox[abp]-`, `-----BEGIN [A-Z ]*PRIVATE KEY-----`.
 - The agent already chose a range: `sed -n`, or the output is piped to `head`/`tail`.
 - Judge failure (timeout, HTTP error, malformed answer).
-- No block reaches the threshold; or kept text ≥ 80% of the total (not worth it).
+- No block reaches the threshold; or no block reaches `FOVEA_MIN_TOP` (`low_contrast`, see below); or kept
+  text ≥ 80% of the total (not worth it).
+
+### Outputs above the harness limit (verified live 7 Nov 2026, Claude Code 2.1.319)
+Above `BASH_MAX_OUTPUT_LENGTH` Claude Code cuts `stdout` to the limit before the hook and saves the full
+output to a file of its own (`~/.claude/projects/<project>/<session>/tool-results/<id>.txt`). Without a
+hook the model sees `<persisted-output>Output too large (59.8KB). Full output saved to: <path>
+Preview (first 2KB): …</persisted-output>`.
+
+Facts from four headless runs with a probe hook:
+- `tool_response` carries `persistedOutputPath` and `persistedOutputSize` (bytes) next to the cut
+  `stdout`, and the file is already complete when PostToolUse runs (61 200 bytes on disk vs 30 000 in `stdout`).
+- A replacement that **keeps** `persistedOutputPath`/`persistedOutputSize` is wrapped in
+  `<persisted-output>` with the original size and a 2 KB preview of the replacement. A replacement
+  **without** them is shown whole (8 KB shown in full, no wrapper). The 5 Nov note "shows only a 2 KB
+  preview of the hook's replacement" (commit `4a4b28d`) came from `replacement = dict(response)` copying
+  these fields, not from a harness limit — don't restore that guard.
+- PreToolUse sees reads of the saved file (`cat <path>`, Read with `file_path` under `tool-results/`):
+  `updatedInput` rewrites the command, `permissionDecision: deny` blocks Read and shows the reason to the model.
+- A `cat` of the saved file is cut and saved again (a second `tool-results` file), so the agent never
+  sees it whole that way.
+
+What Fovea does:
+- With `persistedOutputPath` readable and ≤ `FOVEA_MAX_PERSISTED_BYTES`: replace `stdout` with the file's
+  text (UTF-8, `errors=replace`) **before** the guards, so the error-tail and secret checks run on the
+  full output, not the cut prefix. `chars_total` in the log is the full output.
+- The replacement drops `persistedOutputPath`/`persistedOutputSize` and keeps every other field.
+- Budget: the rendered replacement stays under `BASH_MAX_OUTPUT_LENGTH − 2000` UTF-8 bytes. Over it, keep
+  the highest-scoring kept blocks that fit (log `budget_dropped`); if none fits → passthrough `over_budget`.
+- When the full output is itself at the limit, the header says `full: sed -n A,Bp <path>` instead of
+  `full: cat <path>`, since a cat would be cut and saved again.
+- Log fields: `persisted`, `persisted_bytes`, `persisted_unreadable`, `budget_dropped`.
+
+Not done yet: a PreToolUse hook that turns `cat`/Read of a `tool-results` file into a filtered read, for
+when the PostToolUse step passed the output through (no key, judge failed, not worth it).
 
 ### Task text (one string, sent in every question)
 In order, each part trimmed: Bash `description`; the command (≤ 300 chars); the latest assistant text
@@ -205,6 +241,7 @@ between [A001] and [/A001]) contain information the agent needs for this task?"}
 - Skip hints: first non-empty line of up to 3 blocks in the run, skipping git-log metadata lines
   (`commit <hash>`, `Author:`, `Date:`, `Merge:`), each ≤ 24 chars + `…`; `+N` for the rest.
 - Header carries the output id (the saved file's name). Percentage = kept chars / total chars. Path written with `~`.
+- When the full output is at the harness limit, `full: cat` becomes `full: sed -n A,Bp` (a cat would be cut again).
 - Kept ranges and skip ranges together cover every line exactly once, in original order.
 
 ### Storage
@@ -339,3 +376,19 @@ post.
 
 **Revisit if** function hooks become generally available and a compaction mode is wanted for fidelity
 rather than cost, or if long sessions with cold caches turn out to be common.
+
+### Contrast floor (9 Nov 2026)
+
+The first live week (5–9 Nov, 1 686 Bash calls) gave 12 replacements. One had a clear contrast
+(`git log --stat`, 41 blocks, top 0.96, kept 3%). The other 11 were lukewarm: every block 0.15–0.45. The
+"task" there is a vague description ("Read adequacy judge A"): the agent wants the whole document, the
+judge can't tell what matters, and the threshold cuts on noise (the judge is not deterministic near 0.2).
+Both recovery reads of the week came from that group: the dropped block was the verdict itself, read back
+4 s later.
+
+In validation (90 tasks, explicit questions) every task had a block ≥ 0.54 (median top 0.97), so the
+lukewarm zone is outside the validated regime. Rule: replace only when the top block is ≥ `FOVEA_MIN_TOP`
+(0.5); otherwise pass through with reason `low_contrast`, scores logged. On the validation set it changes
+nothing; it can only lower savings, never recall. Live it would have kept 2 of 12 replacements and dropped
+both recoveries (≈half the week's savings). The same rule covers persisted outputs above the harness limit.
+

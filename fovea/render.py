@@ -50,11 +50,15 @@ def _cat_target(display: str, absolute: str) -> str:
 
 
 def render(sp: Split, labels: List[str], kept: Set[str], chars_total: int, chars_kept: int,
-           out_id: str, display: str, absolute: str, retention_days: float) -> str:
+           out_id: str, display: str, absolute: str, retention_days: float,
+           ranged: bool = False) -> str:
+    """ranged: the full output is too large to cat back (Claude Code would cut and save it
+    again), so the header points to range reads instead."""
     pct = int(round(100.0 * chars_kept / chars_total)) if chars_total else 0
+    reader = "sed -n A,Bp" if ranged else "cat"
     out = [
-        "[fovea %s: %d/%d blocks, %d%% · full: cat %s · kept %sd]"
-        % (out_id, len(kept), len(labels), pct, _cat_target(display, absolute),
+        "[fovea %s: %d/%d blocks, %d%% · full: %s %s · kept %sd]"
+        % (out_id, len(kept), len(labels), pct, reader, _cat_target(display, absolute),
            _days(retention_days))
     ]
     i = 0

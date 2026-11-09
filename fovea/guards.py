@@ -11,6 +11,9 @@ from fovea.config import Config
 
 HARNESS_STDERR_PREFIX = "Shell cwd was reset to "
 
+# Set by hook.with_full_text when tool_response.stdout was replaced by the persisted full output.
+FULL_TEXT_KEY = "_fovea_full_text"
+
 # A failing command reports at the end of its output, so only the tail is checked,
 # and only for the shape of an error message, not the bare word.
 ERROR_TAIL_LINES = 30
@@ -132,9 +135,10 @@ def check(payload: dict, cfg: Config) -> Optional[str]:
     stdout = response["stdout"]
     if len(stdout) < cfg.min_chars:
         return "small_output"
-    if len(stdout.encode("utf-8", "replace")) >= cfg.harness_limit:  # the cut is in UTF-8 bytes
-        # Claude Code already cut this output and saved the full text itself; it shows the model
-        # only a 2 KB preview of whatever we return, so a selection would be cut off.
+    if len(stdout.encode("utf-8", "replace")) >= cfg.harness_limit and not payload.get(FULL_TEXT_KEY):
+        # Claude Code cut this output (the cut is in UTF-8 bytes) and the full text could not be
+        # read from persistedOutputPath (older Claude Code, file gone): filtering the cut text
+        # would select from an arbitrary prefix.
         return "harness_persisted"
     if response.get("interrupted") is True:
         return "interrupted"
