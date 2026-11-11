@@ -18,7 +18,7 @@ if __package__ in (None, ""):
     elif _ROOT not in sys.path:
         sys.path.insert(0, _ROOT)
 
-from fovea import config, guards, store  # noqa: E402
+from fovea import __version__, config, guards, store  # noqa: E402
 
 KEPT_SHARE_LIMIT = 0.8
 # Fields Claude Code adds when it saved the full output itself. Left in a replacement, they make
@@ -38,6 +38,10 @@ def _base_record(payload: dict, cfg) -> dict:
         "cwd": payload.get("cwd"),
         "command": command[:200] if isinstance(command, str) else None,
         "mode": cfg.mode,
+        "version": __version__,
+        # Settings that change decisions; without them a log can't be split by configuration.
+        "config": {"threshold": cfg.threshold, "min_top": cfg.min_top, "min_chars": cfg.min_chars,
+                   "shadow_sample": cfg.shadow_sample, "model": cfg.model},
         "action": "passthrough",
         "transcript_path": transcript if isinstance(transcript, str) else None,
     }

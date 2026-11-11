@@ -5,7 +5,8 @@ import unittest
 
 from helpers import HookCase, KEPT_MARKER, DROPPED_MARKER, API_KEY, NEEDLE, make_output, request_blocks
 
-LOG_FIELDS = ["ts", "session_id", "tool_use_id", "cwd", "command", "task", "mode", "action", "reason",
+LOG_FIELDS = ["ts", "session_id", "tool_use_id", "cwd", "command", "task", "mode", "version", "config",
+              "action", "reason",
               "splitter", "n_blocks", "block_lines", "scores", "kept", "chars_total", "chars_kept",
               "latency_ms", "cost", "out_path", "error"]
 
@@ -80,6 +81,8 @@ class LogTests(HookCase):
         self.assertLessEqual(len(L["task"]), 300)
         self.assertTrue(L["task"])
         self.assertEqual(L["mode"], "active")
+        self.assertRegex(L["version"], r"^\d+\.\d+\.\d+$")
+        self.assertEqual(sorted(L["config"]), ["min_chars", "min_top", "model", "shadow_sample", "threshold"])
         self.assertEqual(L["action"], "replaced")
         self.assertTrue(L["splitter"])
         req = self.stub.requests[0]

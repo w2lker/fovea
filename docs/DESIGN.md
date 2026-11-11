@@ -254,7 +254,8 @@ between [A001] and [/A001]) contain information the agent needs for this task?"}
   unchanged but are scored and logged (`sampled_shadow`) — that is how real losses get measured.
 - `shadow`: score and log, never replace.
 - Log: `FOVEA_HOME/log/YYYY-MM-DD.jsonl`, one line per call that reached eligibility checks: ts,
-  session_id, tool_use_id, cwd, command[:200], task[:300], mode, action (`replaced` | `shadow` |
+  session_id, tool_use_id, cwd, command[:200], task[:300], mode, version, config {threshold, min_top,
+  min_chars, shadow_sample, model}, action (`replaced` | `shadow` |
   `sampled_shadow` | `passthrough`), reason, splitter, n_blocks, block_lines {label: [a, b]},
   scores {label: p}, kept [labels], chars_total, chars_kept, latency_ms, cost, out_path, out_id,
   transcript_path, recovered_id, error. Never the output text.
@@ -392,3 +393,46 @@ lukewarm zone is outside the validated regime. Rule: replace only when the top b
 nothing; it can only lower savings, never recall. Live it would have kept 2 of 12 replacements and dropped
 both recoveries (≈half the week's savings). The same rule covers persisted outputs above the harness limit.
 
+
+## Considered and rejected: a cutoff relative to the top block (11 Nov 2026)
+
+**What live traffic looks like on 0.2.0.** 10–11 Nov, about 820 Bash calls: one replacement. Eligible
+outputs fall into two shapes, and neither is the validated one:
+
+- *Flat low*: exploratory reads (`awk`/`cut` over data, `cat` of a transcript, `wc` + `head`), every
+  block 0.15–0.49. The agent doesn't know yet what it is looking for; the judge can't either. These end
+  as `low_contrast` or `nothing_relevant`.
+- *Flat high*: read-everything calls (a diff for review, a whole document, a JSON dump), every block
+  0.5–0.9 (a 20-block diff: 0.76–0.85; a 39-block markdown file: 0.82–0.91). At 0.2 every block is kept,
+  so the call ends as `not_worth_it`. This is correct: the agent asked for all of it. All five persisted
+  outputs above the harness limit that reached the judge on 10 Nov were this shape.
+
+The clean split of validation (0.98 for the needed block, 0.04–0.17 for the rest) is rare live. The agent
+also narrows its own reads: 1 364 of 3 769 calls on 8–11 Nov were range reads (`range_chosen`). The
+README's "recall 1.00 at 29% kept" describes the validation set, not this traffic.
+
+**The idea.** Keep blocks with p ≥ max(0.2, r × top) to shrink flat-high outputs.
+
+**Backtest, offline** (stage 3 scores, stage 4 majority labels, live rules otherwise unchanged):
+
+| r | runs with every needed block kept | block recall | text kept |
+|---|---|---|---|
+| — (now) | 90/90 | 1.000 | 26% |
+| 0.5 | 84/90 | 0.960 | 17% |
+| 0.6 | 78/90 | 0.914 | 15% |
+| 0.7 | 69/90 | 0.854 | 14% |
+| 0.8 | 61/90 | 0.803 | 13% |
+
+Even r = 0.5 loses needed blocks on the set where contrast is clearest: blocks at p 0.25–0.44 next to a
+0.96–0.99 top (code-01, code-03, md-01). On live logs (block sizes estimated by line counts) r = 0.5
+would turn ~25 `not_worth_it` calls into replacements, about +28k tokens over six days, by dropping
+blocks the judge itself rated 0.5–0.8, where calibration says about half are needed. Rejected: the
+saving is bought with exactly the recall Fovea exists to keep.
+
+**Floor, rechecked.** Backtest of `FOVEA_MIN_TOP` on 522 scored live outputs (5–11 Nov): 0.5 → 8
+replacements, ~17.5k tokens; 0.4 → 13, ~26k; 0.3 → 34, ~69k. The two recovery reads of week 1 had tops of
+0.34 and 0.26, so 0.3 would let one back in. Kept at 0.5.
+
+**Logging.** From 0.2.1 every log line carries `version` and `config` (threshold, min_top, min_chars,
+shadow_sample, model), so a week that spans a settings change or unrestarted processes can be split
+without guessing from timestamps.
